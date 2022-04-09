@@ -12,8 +12,16 @@ var argv   = require('minimist')(process.argv.slice(2));
  */
 var settings = {};
 settings.CONFIG_FILE = argv.config || 'config.xml';
-settings.ICON_FILE = argv.icon || 'icon.png';
+settings.ICON_FILE = argv.icon || '1024.png';
 settings.OLD_XCODE_PATH = argv['xcode-old'] || false;
+var contentsJSONFile= {
+  "images":[],
+  "info" : {
+    "author" : "xcode",
+    "version" : 1
+  }
+};
+
 
 /**
  * Check which platforms are added to the project and return their icon names and sizes
@@ -36,34 +44,24 @@ var getPlatforms = function (projectName) {
     isAdded : fs.existsSync('platforms/ios'),
     iconsPath : 'platforms/ios/' + projectName + xcodeFolder,
     icons : [
-      { name: 'icon-20.png',             size : 20   },
-      { name: 'icon-20@2x.png',          size : 40   },
-      { name: 'icon-20@3x.png',          size : 60   },
-      { name: 'icon-40.png',             size : 40   },
-      { name: 'icon-40@2x.png',          size : 80   },
-      { name: 'icon-50.png',             size : 50   },
-      { name: 'icon-50@2x.png',          size : 100  },
-      { name: 'icon-60@2x.png',          size : 120  },
-      { name: 'icon-60@3x.png',          size : 180  },
-      { name: 'icon-72.png',             size : 72   },
-      { name: 'icon-72@2x.png',          size : 144  },
-      { name: 'icon-76.png',             size : 76   },
-      { name: 'icon-76@2x.png',          size : 152  },
-      { name: 'icon-83.5@2x.png',        size : 167  },
-      { name: 'icon-1024.png',           size : 1024 },
-      { name: 'icon-small.png',          size : 29   },
-      { name: 'icon-small@2x.png',       size : 58   },
-      { name: 'icon-small@3x.png',       size : 87   },
-      { name: 'icon.png',                size : 57   },
-      { name: 'icon@2x.png',             size : 114  },
-      { name: 'AppIcon24x24@2x.png',     size : 48   },
-      { name: 'AppIcon27.5x27.5@2x.png', size : 55   },
-      { name: 'AppIcon29x29@2x.png',     size : 58   },
-      { name: 'AppIcon29x29@3x.png',     size : 87   },
-      { name: 'AppIcon40x40@2x.png',     size : 80   },
-      { name: 'AppIcon44x44@2x.png',     size : 88   },
-      { name: 'AppIcon86x86@2x.png',     size : 172  },
-      { name: 'AppIcon98x98@2x.png',     size : 196  }
+      { "name" : "40.png", "idiom" : "iphone", "scale" : "2x", "size" : "20x20" },
+      { "name" : "60.png", "idiom" : "iphone", "scale" : "3x", "size" : "20x20" },
+      { "name" : "58.png", "idiom" : "iphone", "scale" : "2x", "size" : "29x29" },
+      { "name" : "87.png", "idiom" : "iphone", "scale" : "3x", "size" : "29x29" },
+      { "name" : "80.png", "idiom" : "iphone", "scale" : "2x", "size" : "40x40" },
+      { "name" : "120.png", "idiom" : "iphone", "scale" : "3x", "size" : "40x40" },
+      { "name" : "120.png", "idiom" : "iphone", "scale" : "2x", "size" : "60x60" },
+      { "name" : "180.png", "idiom" : "iphone", "scale" : "3x", "size" : "60x60" },
+      { "name" : "20.png", "idiom" : "ipad", "scale" : "1x", "size" : "20x20" },
+      { "name" : "40.png", "idiom" : "ipad", "scale" : "2x", "size" : "20x20" },
+      { "name" : "29.png", "idiom" : "ipad", "scale" : "1x", "size" : "29x29" },
+      { "name" : "58.png", "idiom" : "ipad", "scale" : "2x", "size" : "29x29" },
+      { "name" : "40.png", "idiom" : "ipad", "scale" : "1x", "size" : "40x40" },
+      { "name" : "80.png", "idiom" : "ipad", "scale" : "2x", "size" : "40x40" },
+      { "name" : "76.png", "idiom" : "ipad", "scale" : "1x", "size" : "76x76" },
+      { "name" : "152.png", "idiom" : "ipad", "scale" : "2x", "size" : "76x76" },
+      { "name" : "167.png", "idiom" : "ipad", "scale" : "2x", "size" : "83.5x83.5" },
+      { "name" : "1024.png", "idiom" : "ios-marketing", "scale" : "1x", "size" : "1024x1024"}
     ]
   });
   platforms.push({
@@ -222,6 +220,15 @@ var generateIcon = function (platform, icon) {
   if (!fs.existsSync(dst)) {
     fs.mkdirsSync(dst);
   }
+  if(platform.name=='ios'){
+    contentsJSONFile.images.push({
+        "filename" : icon.name,
+        "scale" : icon.scale,
+        "size" : icon.size,
+        "idiom" : icon.idiom
+    });
+    icon.size=icon.size.split('x')[0]*parseInt(icon.scale);
+  }
   ig.resize({
     srcPath: srcPath,
     dstPath: dstPath,
@@ -270,6 +277,11 @@ var generateIconsForPlatform = function (platform) {
   icons.forEach(function (icon) {
     all.push(generateIcon(platform, icon));
   });
+
+  if(platform.name=='ios'){
+    fs.writeFileSync(platform.iconsPath+'Contents.json', JSON.stringify(contentsJSONFile,null,2));
+    console.log('Contents.json saved.');
+  }
   return Promise.all(all);
 };
 
@@ -369,4 +381,5 @@ atLeastOnePlatformFound()
     }
   }).then(function () {
     console.log('');
+
   });
